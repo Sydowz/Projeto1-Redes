@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+import random
 
 from datetime import datetime
 
@@ -97,17 +98,44 @@ def client_thread(conn, addr):
             conn.send("Comando invalido. Use :item, :tempo, :quit ou um valor numerico.\n".encode())
 
 
+def bot_thread(conn):
+    """Simula outros usuarios enviando lances aleatorios."""
+    global current_bid, winner, closed
+    bot_names = ["Bot_Ana", "Bot_Carlos", "Bot_Pedro", "Bot_Foster"]
+
+    while not closed:
+        time.sleep(random.randint(5, 15))
+        if closed:
+            break
+
+        simulated_bid = current_bid + random.randint(-500, 1500)
+        if simulated_bid > current_bid:
+            bot_name = random.choice(bot_names)
+            with lock:
+                current_bid = simulated_bid
+                winner = bot_name
+            try:
+                conn.send(f"{bot_name} deu um lance de R${simulated_bid}!\n".encode())
+            except OSError:
+                with lock:
+                    closed = True
+                break
+
+
 def main():
     server, conn, addr = start_server()
 
     t_timer = threading.Thread(target=timer_thread)
     t_client = threading.Thread(target=client_thread, args=(conn, addr))
+    t_bot = threading.Thread(target=bot_thread, args=(conn,))
 
     t_timer.start()
     t_client.start()
+    t_bot.start()
 
     t_timer.join()
     t_client.join()
+    t_bot.join()
 
     conn.close()
     server.close()
