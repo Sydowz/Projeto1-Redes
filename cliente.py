@@ -13,7 +13,7 @@ def conectar_cliente():
 
 
 def main_cliente():
-    """Ponto de entrada do cliente na etapa inicial."""
+    """Ponto de entrada do cliente."""
     client = conectar_cliente()
     print("Cliente conectado ao servidor.")
     client.close()
