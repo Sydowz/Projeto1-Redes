@@ -137,6 +137,14 @@ def main():
     t_client.join()
     t_bot.join()
 
+    final_winner = winner if winner is not None else "Sem vencedor"
+    final_message = f"Item Vendido! Vencedor: {final_winner} com R${current_bid}\n"
+    try:
+        conn.send(final_message.encode())
+    except OSError:
+        pass
+    print(final_message.strip())
+
     conn.close()
     server.close()
 
