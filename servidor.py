@@ -1,7 +1,7 @@
 import socket
 import threading
 import time
-import random
+
 from datetime import datetime
 
 HOST = "127.0.0.1"
@@ -53,12 +53,61 @@ def timer_thread():
         closed = True
 
 
+def client_thread(conn, addr):
+    """Recebe comandos e lances do cliente conectado."""
+    global current_bid, winner, closed
+
+    while not closed:
+        try:
+            data = conn.recv(1024)
+        except socket.timeout:
+            continue
+        except (ConnectionResetError, OSError):
+            with lock:
+                closed = True
+            break
+
+        if not data:
+            print("Cliente desconectado.")
+            with lock:
+                closed = True
+            break
+
+        message = data.decode().strip()
+
+        if message == ":item":
+            conn.send(f"Item: {ITEM} | Lance atual: R${current_bid}\n".encode())
+        elif message == ":tempo":
+            conn.send(f"Tempo restante: {global_time} segundos\n".encode())
+        elif message == ":quit":
+            print("Cliente encerrou a conexao.")
+            with lock:
+                closed = True
+            break
+        elif message.isdigit():
+            value = int(message)
+            if value > current_bid:
+                with lock:
+                    current_bid = value
+                    winner = addr
+                conn.send("Lance aceito!\n".encode())
+            else:
+                conn.send(f"Lance invalido! O minimo atual e R${current_bid}\n".encode())
+        else:
+            conn.send("Comando invalido. Use :item, :tempo, :quit ou um valor numerico.\n".encode())
+
+
 def main():
     server, conn, addr = start_server()
 
     t_timer = threading.Thread(target=timer_thread)
+    t_client = threading.Thread(target=client_thread, args=(conn, addr))
+
     t_timer.start()
+    t_client.start()
+
     t_timer.join()
+    t_client.join()
 
     conn.close()
     server.close()
