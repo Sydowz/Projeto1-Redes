@@ -19,11 +19,10 @@ def thread_receber_mensagem(client):
             message = client.recv(1024).decode()
         except OSError:
             break
-
         if not message:
             print("Leilao encerrado! Pressione Enter para sair.")
+            client.close()
             break
-
         print(message, end="")
 
 
@@ -34,12 +33,10 @@ def thread_enviar_mensagem(client):
             message = input()
         except EOFError:
             message = ":quit"
-
         try:
             client.send(message.encode())
         except OSError:
             break
-
         if message == ":quit":
             break
 
